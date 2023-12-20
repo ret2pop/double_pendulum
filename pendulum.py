@@ -3,11 +3,21 @@
 import math
 import matplotlib.pyplot as plt
 import random
+import sys
 
 
 class PendulumSystem:
     def __init__(
-        self, r1=5, r2=1, m1=3, m2=2, phi=1.57, phi_dot=0.5, theta=3, theta_dot=1
+        self,
+        r1=5,
+        r2=1,
+        m1=3,
+        m2=2,
+        phi=1.57,
+        phi_dot=0.5,
+        theta=3,
+        theta_dot=1,
+        entropy=0.2,
     ):
         self.g = 9.8
         self.r2 = r2
@@ -32,7 +42,7 @@ class PendulumSystem:
         self.delta_phi = 0
         self.deltatheta_dot = 0
         self.delta_theta = 0
-        self.entropy = 0.2
+        self.entropy = entropy
 
     def populate(self, r):
         for i in range(r):
@@ -69,9 +79,13 @@ class PendulumSystem:
         self.PhiDot.append(self.phi_dot)
         self.delta_phi = self.phi_dot * self.delta_t
         self.deltatheta_dot = (
-            self.m2 * self.g * math.cos(self.phi) * math.sin(self.phi - self.theta)
-            - self.m1 * self.g * math.sin(self.theta)
-        ) / (self.m1 * self.r1)
+            self.delta_t
+            * (
+                self.m2 * self.g * math.cos(self.phi) * math.sin(self.phi - self.theta)
+                - self.m1 * self.g * math.sin(self.theta)
+            )
+            / (self.m1 * self.r1)
+        )
 
         self.theta_dot += self.deltatheta_dot
         self.ThetaDot.append(self.theta_dot)
@@ -92,6 +106,8 @@ class PendulumSystem:
             ),
             label=f"theta, epoch {self.epoch}",
         )
+        plt.xlabel("time derivatives")
+        plt.ylabel("phi, theta (radians)")
         # plt.plot(
         #     [i for i in range(len(self.Phi))],
         #     self.Phi,
@@ -106,36 +122,60 @@ class PendulumSystem:
             self.ThetaDot,
             self.Theta,
             color=(
-                "#" + "".join([random.choice("0123456789ABCDEF") for j in range(6)])
+                "#" + "".join([random.choice("0123456789ABCDEF") for _ in range(6)])
             ),
             label=f"Theta, epoch {self.epoch}",
         )
+        plt.xlabel("derivatives")
+        plt.ylabel("phi, theta (radians)")
+        # plt.plot(
+        #     self.PhiDot,
+        #     self.Phi,
+        #     color=(
+        #         "#" + "".join([random.choice("0123456789ABCDEF") for _ in range(6)])
+        #     ),
+        #     label=f"Phi, epoch {self.epoch}",
+        # )
+
+    def cartesian(self):
+        X = []
+        Y = []
+        for i in range(len(self.Phi)):
+            X.append(
+                self.r1 * math.sin(self.Theta[i]) + self.r2 * math.sin(self.Phi[i])
+            )
+            Y.append(
+                -(self.r1 * math.cos(self.Theta[i]) + self.r2 * math.cos(self.Phi[i]))
+            )
         plt.plot(
-            self.PhiDot,
-            self.Phi,
+            X,
+            Y,
             color=(
-                "#" + "".join([random.choice("0123456789ABCDEF") for j in range(6)])
+                "#" + "".join([random.choice("0123456789ABCDEF") for _ in range(6)])
             ),
-            label=f"Phi, epoch {self.epoch}",
+            label=f"Position, epoch {self.epoch}",
         )
+        plt.xlabel("X")
+        plt.ylabel("Y")
 
 
-p = PendulumSystem(r1=5, r2=1, m1=3, m2=2, phi=1.57, phi_dot=1, theta=3, theta_dot=1)
-steps = 500
-epochs = 5
+p = PendulumSystem(
+    r1=5, r2=5, m1=3, m2=2, phi=2, phi_dot=0.2, theta=3.14, theta_dot=-0.2
+)
+T = 3000
+steps = int(T // p.delta_t)
+epochs = 20
 
 # original
 p.populate(steps)
-p.phase_space()
+p.graph()
 
 # pertubations
 for i in range(epochs):
     p.perturb()
     p.reset()
     p.populate(steps)
-    p.phase_space()
+    p.graph()
 
-plt.xlabel("time derivatives")
-plt.ylabel("phi, theta (radians)")
-plt.legend()
+# plt.legend()
 plt.show()
